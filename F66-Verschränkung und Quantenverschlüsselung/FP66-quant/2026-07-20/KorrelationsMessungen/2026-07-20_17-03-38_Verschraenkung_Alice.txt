@@ -1,0 +1,5 @@
+# AngleAlice(deg); AngleBob(deg); A0B0; A1B0; CA0B1; A1B1 [Sum over 5 sec. for incidences and coincidences, Angles of HWP]
+0;11;95;916;72;45
+0;34;711;216;23;98
+23;34;287;461;285;15
+23;11;54;764;134;224

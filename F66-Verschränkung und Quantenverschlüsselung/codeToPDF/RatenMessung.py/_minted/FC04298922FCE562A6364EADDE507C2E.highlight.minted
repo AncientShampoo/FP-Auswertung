@@ -1,0 +1,529 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{import}\PYG{+w}{ }\PYG{n+nn}{matplotlib.pyplot}\PYG{+w}{ }\PYG{k}{as}\PYG{+w}{ }\PYG{n+nn}{plt}
+\PYG{k+kn}{import}\PYG{+w}{ }\PYG{n+nn}{numpy}\PYG{+w}{ }\PYG{k}{as}\PYG{+w}{ }\PYG{n+nn}{np}
+\PYG{k+kn}{import}\PYG{+w}{ }\PYG{n+nn}{pandas}\PYG{+w}{ }\PYG{k}{as}\PYG{+w}{ }\PYG{n+nn}{pd}
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{scipy.optimize}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{curve\PYGZus{}fit}
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{pathlib}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{Path}
+\PYG{c+c1}{\PYGZsh{} from chshUngl import data\PYGZus{}alice}
+
+\PYG{n}{BASE\PYGZus{}DIR} \PYG{o}{=} \PYG{n}{Path}\PYG{p}{(}\PYG{n+nv+vm}{\PYGZus{}\PYGZus{}file\PYGZus{}\PYGZus{}}\PYG{p}{)}\PYG{o}{.}\PYG{n}{parent}
+
+\PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{BASE\PYGZus{}DIR} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}FP66\PYGZhy{}quant\PYGZdq{}} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZdq{}}
+\PYG{n}{DATA\PYGZus{}KORR\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}KorrelationsMessungen\PYGZdq{}}
+\PYG{n}{DATA\PYGZus{}RATEN\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}RatenMessungen\PYGZdq{}}
+\PYG{n}{DATA\PYGZus{}BIT\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}BitMessungen\PYGZdq{}}
+
+\PYG{n}{IMAGE\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{BASE\PYGZus{}DIR} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}Images\PYGZdq{}}
+\PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{IMAGE\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}Einzelzählraten\PYGZsq{}}
+\PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{IMAGE\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}Koinzidenz\PYGZsq{}}
+
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Matplotlib settings \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{rcParams}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}axes.titlesize\PYGZsq{}}\PYG{p}{]} \PYG{o}{=} \PYG{l+m+mi}{16}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{rcParams}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}text.usetex\PYGZsq{}}\PYG{p}{]} \PYG{o}{=} \PYG{k+kc}{True}
+
+\PYG{n}{FONTSIZE} \PYG{o}{=} \PYG{l+m+mi}{14}
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Utility Functions \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{n}{ROUND\PYGZus{}TO} \PYG{o}{=} \PYG{l+m+mi}{4}
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{df}\PYG{p}{,} \PYG{n}{key}\PYG{p}{):}
+    \PYG{n}{N\PYGZus{}max} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{])}
+    \PYG{n}{N\PYGZus{}min} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{])}
+    \PYG{k}{return} \PYG{p}{(}\PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{(}\PYG{n}{np}\PYG{o}{.}\PYG{n}{sqrt}\PYG{p}{(}\PYG{n}{N\PYGZus{}min}\PYG{p}{),} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{),} \PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{(}\PYG{n}{np}\PYG{o}{.}\PYG{n}{sqrt}\PYG{p}{(}\PYG{n}{N\PYGZus{}max}\PYG{p}{),} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{))}
+
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{df}\PYG{p}{,} \PYG{n}{key}\PYG{p}{,} \PYG{n}{range\PYGZus{}start}\PYG{o}{=}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{n}{range\PYGZus{}stop}\PYG{o}{=\PYGZhy{}}\PYG{l+m+mi}{1}\PYG{p}{):}
+    \PYG{n}{N\PYGZus{}max} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{][}\PYG{n}{range\PYGZus{}start}\PYG{p}{:}\PYG{n}{range\PYGZus{}stop}\PYG{p}{])}
+    \PYG{n}{N\PYGZus{}min} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{][}\PYG{n}{range\PYGZus{}start}\PYG{p}{:}\PYG{n}{range\PYGZus{}stop}\PYG{p}{])}
+    \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{((}\PYG{n}{N\PYGZus{}max} \PYG{o}{\PYGZhy{}} \PYG{n}{N\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{p}{(}\PYG{n}{N\PYGZus{}max} \PYG{o}{+} \PYG{n}{N\PYGZus{}min}\PYG{p}{),} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{)}
+
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{df}\PYG{p}{,} \PYG{n}{key}\PYG{p}{):}
+    \PYG{n}{N\PYGZus{}max} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{])}
+    \PYG{n}{N\PYGZus{}min} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{])}
+    \PYG{k}{return} \PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{((}\PYG{l+m+mi}{2} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{sqrt}\PYG{p}{(}\PYG{n}{N\PYGZus{}max} \PYG{o}{*} \PYG{n}{N\PYGZus{}min} \PYG{o}{/} \PYG{p}{(}\PYG{n}{N\PYGZus{}max} \PYG{o}{+} \PYG{n}{N\PYGZus{}min}\PYG{p}{)}\PYG{o}{**}\PYG{l+m+mi}{3}\PYG{p}{)),} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{)}
+
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Curve fitting Functions \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{func\PYGZus{}sin\PYGZus{}fitt}\PYG{p}{(}\PYG{n}{x}\PYG{p}{,} \PYG{n}{a}\PYG{p}{,} \PYG{n}{b}\PYG{p}{,} \PYG{n}{c}\PYG{p}{,} \PYG{n}{d}\PYG{p}{):}
+    \PYG{k}{return} \PYG{n}{a} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{sin}\PYG{p}{(}\PYG{n}{b} \PYG{o}{*} \PYG{p}{(}\PYG{n}{x} \PYG{o}{+} \PYG{n}{c}\PYG{p}{))} \PYG{o}{+} \PYG{n}{d}
+
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{estimate\PYGZus{}sin\PYGZus{}p0}\PYG{p}{(}\PYG{n}{x}\PYG{p}{,} \PYG{n}{y}\PYG{p}{,} \PYG{n}{n\PYGZus{}points}\PYG{o}{=}\PYG{k+kc}{None}\PYG{p}{):}
+\PYG{+w}{    }\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Estimate [a, b, c, d] starting values for a*sin(b*(x+c))+d}
+\PYG{l+s+sd}{    from the max/min within the first n\PYGZus{}points of (x, y).\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+    \PYG{n}{x} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{asarray}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}
+    \PYG{n}{y} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{asarray}\PYG{p}{(}\PYG{n}{y}\PYG{p}{)}
+    \PYG{k}{if} \PYG{n}{n\PYGZus{}points} \PYG{o+ow}{is} \PYG{o+ow}{not} \PYG{k+kc}{None}\PYG{p}{:}
+        \PYG{n}{x}\PYG{p}{,} \PYG{n}{y} \PYG{o}{=} \PYG{n}{x}\PYG{p}{[:}\PYG{n}{n\PYGZus{}points}\PYG{p}{],} \PYG{n}{y}\PYG{p}{[:}\PYG{n}{n\PYGZus{}points}\PYG{p}{]}
+
+    \PYG{n}{idx\PYGZus{}max} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{argmax}\PYG{p}{(}\PYG{n}{y}\PYG{p}{)}
+    \PYG{n}{idx\PYGZus{}min} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{argmin}\PYG{p}{(}\PYG{n}{y}\PYG{p}{)}
+    \PYG{n}{x\PYGZus{}max}\PYG{p}{,} \PYG{n}{x\PYGZus{}min} \PYG{o}{=} \PYG{n}{x}\PYG{p}{[}\PYG{n}{idx\PYGZus{}max}\PYG{p}{],} \PYG{n}{x}\PYG{p}{[}\PYG{n}{idx\PYGZus{}min}\PYG{p}{]}
+    \PYG{n}{y\PYGZus{}max}\PYG{p}{,} \PYG{n}{y\PYGZus{}min} \PYG{o}{=} \PYG{n}{y}\PYG{p}{[}\PYG{n}{idx\PYGZus{}max}\PYG{p}{],} \PYG{n}{y}\PYG{p}{[}\PYG{n}{idx\PYGZus{}min}\PYG{p}{]}
+
+    \PYG{n+nb}{print}\PYG{p}{(}\PYG{n}{x\PYGZus{}max}\PYG{p}{,} \PYG{n}{x\PYGZus{}min}\PYG{p}{,} \PYG{n}{y\PYGZus{}max}\PYG{p}{,} \PYG{n}{y\PYGZus{}min}\PYG{p}{)}
+
+    \PYG{n}{a0} \PYG{o}{=} \PYG{p}{(}\PYG{n}{y\PYGZus{}max} \PYG{o}{\PYGZhy{}} \PYG{n}{y\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{l+m+mi}{2}
+    \PYG{n}{b0} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{pi} \PYG{o}{/} \PYG{n}{np}\PYG{o}{.}\PYG{n}{abs}\PYG{p}{((}\PYG{n}{x\PYGZus{}max} \PYG{o}{\PYGZhy{}} \PYG{n}{x\PYGZus{}min}\PYG{p}{))}
+    \PYG{n}{c0} \PYG{o}{=} \PYG{o}{\PYGZhy{}}\PYG{p}{(}\PYG{n}{x\PYGZus{}max} \PYG{o}{+} \PYG{n}{x\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{l+m+mi}{2}   \PYG{c+c1}{\PYGZsh{} note the sign fix}
+    \PYG{n}{d0} \PYG{o}{=} \PYG{p}{(}\PYG{n}{y\PYGZus{}max} \PYG{o}{+} \PYG{n}{y\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{l+m+mi}{2}
+
+    \PYG{k}{return} \PYG{p}{[}\PYG{n}{a0}\PYG{p}{,} \PYG{n}{b0}\PYG{p}{,} \PYG{n}{c0}\PYG{p}{,} \PYG{n}{d0}\PYG{p}{]}
+
+
+\PYG{n}{err\PYGZus{}DEGREE} \PYG{o}{=} \PYG{l+m+mf}{0.5}
+
+\PYG{n}{columns} \PYG{o}{=} \PYG{p}{[}
+    \PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{,}
+\PYG{p}{]}
+
+\PYG{n}{data\PYGZus{}bob} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}RatenMessungen/2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}13\PYGZhy{}56\PYGZhy{}28\PYGZus{}Zufall\PYGZus{}Bob.txt\PYGZdq{}}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+\PYG{n}{data\PYGZus{}bob}\PYG{o}{.}\PYG{n}{sort\PYGZus{}values}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{,} \PYG{n}{inplace}\PYG{o}{=}\PYG{k+kc}{True}\PYG{p}{,} \PYG{n}{ignore\PYGZus{}index}\PYG{o}{=}\PYG{k+kc}{True}\PYG{p}{)}
+\PYG{n}{data\PYGZus{}alice} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}RatenMessungen/2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}14\PYGZhy{}06\PYGZhy{}37\PYGZus{}Zufall\PYGZus{}Alice.txt\PYGZdq{}}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+\PYG{n}{data\PYGZus{}alice}\PYG{o}{.}\PYG{n}{sort\PYGZus{}values}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{,} \PYG{n}{inplace}\PYG{o}{=}\PYG{k+kc}{True}\PYG{p}{,} \PYG{n}{ignore\PYGZus{}index}\PYG{o}{=}\PYG{k+kc}{True}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} print(data)}
+
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Bob 0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Bob 0 nur stabiler bereich:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mi}{18}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{][:}\PYG{+w}{    }\PYG{l+m+mi}{18}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{][:}\PYG{l+m+mi}{18}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Bob 1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Alice 0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Alice 1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+
+\PYG{n}{x\PYGZus{}values\PYGZus{}fit} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{linspace}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mi}{180}\PYG{p}{,} \PYG{l+m+mi}{10000}\PYG{p}{)}
+
+\PYG{n}{n\PYGZus{}points}\PYG{o}{=}\PYG{l+m+mi}{18}
+\PYG{n}{popt}\PYG{p}{,} \PYG{n}{pcov} \PYG{o}{=} \PYG{n}{curve\PYGZus{}fit}\PYG{p}{(}\PYG{n}{func\PYGZus{}sin\PYGZus{}fitt}\PYG{p}{,} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{][:}\PYG{n}{n\PYGZus{}points}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{][:}\PYG{n}{n\PYGZus{}points}\PYG{p}{])}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Count rates without filtering for coincidences\PYGZcb{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Bob\PYGZus{}1.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+
+\PYG{n}{n\PYGZus{}points} \PYG{o}{=} \PYG{l+m+mi}{18}
+\PYG{n}{popt}\PYG{p}{,} \PYG{n}{pcov} \PYG{o}{=} \PYG{n}{curve\PYGZus{}fit}\PYG{p}{(}
+    \PYG{n}{func\PYGZus{}sin\PYGZus{}fitt}\PYG{p}{,}
+    \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{:}\PYG{n}{n\PYGZus{}points}\PYG{p}{],}
+    \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{:}\PYG{n}{n\PYGZus{}points}\PYG{p}{],}
+    \PYG{n}{p0}\PYG{o}{=}\PYG{n}{estimate\PYGZus{}sin\PYGZus{}p0}\PYG{p}{(}
+            \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],}
+            \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{],}
+            \PYG{n}{n\PYGZus{}points}\PYG{o}{=}\PYG{n}{n\PYGZus{}points}
+        \PYG{p}{),}
+    \PYG{n}{bounds}\PYG{o}{=}\PYG{p}{(}
+            \PYG{p}{[}\PYG{o}{\PYGZhy{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{inf}\PYG{p}{,}      \PYG{l+m+mi}{2}\PYG{o}{*}\PYG{n}{np}\PYG{o}{.}\PYG{n}{pi}\PYG{o}{/}\PYG{l+m+mi}{150}\PYG{p}{,} \PYG{o}{\PYGZhy{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{inf}\PYG{p}{,} \PYG{o}{\PYGZhy{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{inf}\PYG{p}{],}   \PYG{c+c1}{\PYGZsh{} lower: a\PYGZgt{}0, period\PYGZlt{}150°}
+            \PYG{p}{[}\PYG{n}{np}\PYG{o}{.}\PYG{n}{inf}\PYG{p}{,} \PYG{l+m+mi}{2}\PYG{o}{*}\PYG{n}{np}\PYG{o}{.}\PYG{n}{pi}\PYG{o}{/}\PYG{l+m+mi}{60}\PYG{p}{,}   \PYG{n}{np}\PYG{o}{.}\PYG{n}{inf}\PYG{p}{,}  \PYG{n}{np}\PYG{o}{.}\PYG{n}{inf}\PYG{p}{]}    \PYG{c+c1}{\PYGZsh{} upper: period\PYGZgt{}60°}
+        \PYG{p}{),}
+    \PYG{n}{method}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}trf\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{max\PYGZus{}nfev}\PYG{o}{=}\PYG{l+m+mi}{6000}
+    \PYG{p}{)}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{plot}\PYG{p}{(}
+    \PYG{n}{x\PYGZus{}values\PYGZus{}fit}\PYG{p}{,}
+    \PYG{n}{func\PYGZus{}sin\PYGZus{}fitt}\PYG{p}{(}\PYG{n}{x\PYGZus{}values\PYGZus{}fit}\PYG{p}{,} \PYG{o}{*}\PYG{n}{popt}\PYG{p}{)}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Count rates without filtering for coincidences\PYGZcb{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Bob\PYGZus{}0.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{])}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenBeideDetektoren\PYGZus{}Bob.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Polar Coordinates \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}*\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Polar\PYGZus{}Bob\PYGZus{}1.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}*\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Polar\PYGZus{}Bob\PYGZus{}0.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B0\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}*\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}B1\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}.\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenBeideDetektoren\PYGZus{}Polar\PYGZus{}Bob.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+
+
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{])}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenBeideDetektoren\PYGZus{}Alice.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Count rates without filtering for coincidences\PYGZcb{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Alice\PYGZus{}0.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Count rates without filtering for coincidences\PYGZcb{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Alice\PYGZus{}1.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Alice \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Polar Coordinates \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{} \PYGZsh{}}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}*\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Polar\PYGZus{}Alice\PYGZus{}1.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}*\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenEinzeln\PYGZus{}Polar\PYGZus{}Alice\PYGZus{}0.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{} Beide \PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}*\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{polar}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1\PYGZsq{}}\PYG{p}{],} \PYG{n}{marker}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}.\PYGZsq{}}\PYG{p}{,} \PYG{n}{linestyle}\PYG{o}{=}\PYG{l+s+s1}{\PYGZsq{}\PYGZsq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}EinzelzählratenBeideDetektoren\PYGZus{}Polar\PYGZus{}Alice.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi} \PYG{o}{=} \PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+
+
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}Korrelations messung\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{} +45}
+\PYG{n}{DATA\PYGZus{}NAME\PYGZus{}ALICE} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}15\PYGZhy{}20\PYGZhy{}46\PYGZus{}Korrelation\PYGZus{}Alice.txt\PYGZsq{}}
+\PYG{n}{DATA\PYGZus{}NAME\PYGZus{}BOB} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}15\PYGZhy{}11\PYGZhy{}59\PYGZus{}Korrelation\PYGZus{}Bob.txt\PYGZsq{}}
+\PYG{n}{data\PYGZus{}bob\PYGZus{}corr} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}RATEN\PYGZus{}PATH} \PYG{o}{/} \PYG{n}{DATA\PYGZus{}NAME\PYGZus{}BOB}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+\PYG{n}{data\PYGZus{}alice\PYGZus{}corr} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}RATEN\PYGZus{}PATH} \PYG{o}{/} \PYG{n}{DATA\PYGZus{}NAME\PYGZus{}ALICE}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+
+\PYG{n+nb}{print}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}Fixiert Alice +45, Bobs detektoren:\PYGZsq{}}\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{()}
+
+
+\PYG{n+nb}{print}\PYG{p}{(}\PYG{l+s+s1}{\PYGZsq{}Fixiert Bob +45, Alices Detektoren:\PYGZsq{}}\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Coincidence count rate\PYGZcb{}\PYGZsq{}} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{+} \PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{} Alice HWP fixated at \PYGZdl{}+45\PYGZca{}\PYGZbs{}circ\PYGZdl{}\PYGZsq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}KoinzidenztählratenAliceFixiert45.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi}\PYG{o}{=}\PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Coincidence count rate\PYGZcb{}\PYGZsq{}} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{+} \PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{} Bob HWP fixated at \PYGZdl{}+45\PYGZca{}\PYGZbs{}circ\PYGZdl{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}KoinzidenztählratenBobFixiert45.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi}\PYG{o}{=}\PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+
+
+
+\PYG{c+c1}{\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}0/90\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}}
+\PYG{n}{DATA\PYGZus{}NAME\PYGZus{}ALICE} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}14\PYGZhy{}58\PYGZhy{}07\PYGZus{}Korrelation\PYGZus{}Alice.txt\PYGZsq{}}
+\PYG{n}{DATA\PYGZus{}NAME\PYGZus{}BOB} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}14\PYGZhy{}42\PYGZhy{}25\PYGZus{}Korrelation\PYGZus{}Bob.txt\PYGZsq{}}
+\PYG{n}{data\PYGZus{}bob\PYGZus{}corr} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}RATEN\PYGZus{}PATH} \PYG{o}{/} \PYG{n}{DATA\PYGZus{}NAME\PYGZus{}BOB}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+\PYG{n}{data\PYGZus{}alice\PYGZus{}corr} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}RATEN\PYGZus{}PATH} \PYG{o}{/} \PYG{n}{DATA\PYGZus{}NAME\PYGZus{}ALICE}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Fixiert Alice 0/90 grad, Bobs Detektor\PYGZdq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A0B0: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}bob\PYGZus{}corr, \PYGZsq{}A0B0\PYGZsq{}))}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A0B1: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}bob\PYGZus{}corr, \PYGZsq{}A0B1\PYGZsq{}))}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A1B0: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}bob\PYGZus{}corr, \PYGZsq{}A1B0\PYGZsq{}))}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A1B1: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}bob\PYGZus{}corr, \PYGZsq{}A1B1\PYGZsq{}))}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{()}
+\PYG{n+nb}{print}\PYG{p}{()}
+
+\PYG{n+nb}{print}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}Fixiert Bob 0/90 grad, Alices Detektor\PYGZdq{}}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A0B0: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}alice\PYGZus{}corr, \PYGZsq{}A0B0\PYGZsq{}))}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A0B1: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}alice\PYGZus{}corr, \PYGZsq{}A0B1\PYGZsq{}))}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A1B0: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}alice\PYGZus{}corr, \PYGZsq{}A1B0\PYGZsq{}))}
+\PYG{c+c1}{\PYGZsh{} print(\PYGZsq{}Polaristaionsgrad Koinzidenz A1B1: \PYGZsq{}, get\PYGZus{}polaristaoinsgrad(data\PYGZus{}alice\PYGZus{}corr, \PYGZsq{}A1B1\PYGZsq{}))}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A0B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B0:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}Polaristaionsgrad Koinzidenz A1B1:  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit\PYGZus{}polarisationsgrad}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmin: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}nmax: }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ pm }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{get\PYGZus{}unsicherheit}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{)[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+\PYG{p}{)}
+\PYG{n+nb}{print}\PYG{p}{()}
+\PYG{n+nb}{print}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}
+\PYG{c+c1}{\PYGZsh{} plt.scatter(data\PYGZus{}bob\PYGZus{}corr[\PYGZsq{}AngleBob(deg)\PYGZsq{}], data\PYGZus{}bob\PYGZus{}corr[\PYGZsq{}A0B1\PYGZsq{}])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Coincidence count rate\PYGZcb{}\PYGZsq{}} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{+} \PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{} Alice HWP fixated at \PYGZdl{}0\PYGZca{}\PYGZbs{}circ\PYGZdl{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}KoinzidenztählratenAliceFixiert0\PYGZus{}90\PYGZus{}A0B0.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi}\PYG{o}{=}\PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+\PYG{c+c1}{\PYGZsh{} plt.scatter(data\PYGZus{}bob\PYGZus{}corr[\PYGZsq{}AngleBob(deg)\PYGZsq{}], data\PYGZus{}bob\PYGZus{}corr[\PYGZsq{}A0B0\PYGZsq{}])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Coincidence count rate\PYGZcb{}\PYGZsq{}} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{+} \PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{} Alice HWP fixated at \PYGZdl{}0\PYGZca{}\PYGZbs{}circ\PYGZdl{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}KoinzidenztählratenAliceFixiert0\PYGZus{}90\PYGZus{}A0B1.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi}\PYG{o}{=}\PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Coincidence count rate\PYGZcb{}\PYGZsq{}} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{+} \PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{} Alice HWP fixated at \PYGZdl{}0\PYGZca{}\PYGZbs{}circ\PYGZdl{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}KoinzidenztählratenAliceFixiert0\PYGZus{}90\PYGZus{}A1B0.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi}\PYG{o}{=}\PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}bob\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Coincidence count rate\PYGZcb{}\PYGZsq{}} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{+} \PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{} Alice HWP fixated at \PYGZdl{}0\PYGZca{}\PYGZbs{}circ\PYGZdl{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}KoinzidenztählratenAliceFixiert0\PYGZus{}90\PYGZus{}A1B1.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi}\PYG{o}{=}\PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{scatter}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{],} \PYG{n}{data\PYGZus{}alice\PYGZus{}corr}\PYG{p}{[}\PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{])}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{title}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{}\PYGZbs{}textbf\PYGZob{}Coincidence count rate\PYGZcb{}\PYGZsq{}} \PYG{o}{+} \PYG{l+s+s1}{\PYGZsq{}}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s1}{\PYGZsq{}} \PYG{o}{+} \PYG{l+s+sa}{r}\PYG{l+s+s1}{\PYGZsq{} Bob HWP fixated at \PYGZdl{}0\PYGZca{}\PYGZbs{}circ\PYGZdl{}\PYGZsq{}}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{xlabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Angle HWP \PYGZdl{}[\PYGZca{}\PYGZbs{}circ]\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{ylabel}\PYG{p}{(}\PYG{l+s+sa}{r}\PYG{l+s+s2}{\PYGZdq{}Counts \PYGZdl{}N\PYGZdl{}\PYGZdq{}}\PYG{p}{,} \PYG{n}{fontsize}\PYG{o}{=}\PYG{n}{FONTSIZE}\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} plt.show()}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{savefig}\PYG{p}{(}
+    \PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}KoinzidenztählratenBobFixiert0.jpg\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{dpi}\PYG{o}{=}\PYG{l+m+mi}{900}\PYG{p}{,}
+    \PYG{n}{bbox\PYGZus{}inches}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}tight\PYGZdq{}}
+\PYG{p}{)}
+\PYG{n}{plt}\PYG{o}{.}\PYG{n}{close}\PYG{p}{()}
+\end{MintedVerbatim}

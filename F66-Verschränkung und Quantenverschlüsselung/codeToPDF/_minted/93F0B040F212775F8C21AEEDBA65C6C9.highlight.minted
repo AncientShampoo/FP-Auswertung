@@ -1,0 +1,124 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{import}\PYG{+w}{ }\PYG{n+nn}{matplotlib.pyplot}\PYG{+w}{ }\PYG{k}{as}\PYG{+w}{ }\PYG{n+nn}{plt}
+\PYG{k+kn}{import}\PYG{+w}{ }\PYG{n+nn}{numpy}\PYG{+w}{ }\PYG{k}{as}\PYG{+w}{ }\PYG{n+nn}{np}
+\PYG{k+kn}{import}\PYG{+w}{ }\PYG{n+nn}{pandas}\PYG{+w}{ }\PYG{k}{as}\PYG{+w}{ }\PYG{n+nn}{pd}
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{scipy.optimize}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{curve\PYGZus{}fit}
+\PYG{k+kn}{from}\PYG{+w}{ }\PYG{n+nn}{pathlib}\PYG{+w}{ }\PYG{k+kn}{import} \PYG{n}{Path}
+
+\PYG{n}{BASE\PYGZus{}DIR} \PYG{o}{=} \PYG{n}{Path}\PYG{p}{(}\PYG{n+nv+vm}{\PYGZus{}\PYGZus{}file\PYGZus{}\PYGZus{}}\PYG{p}{)}\PYG{o}{.}\PYG{n}{parent}
+
+\PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{BASE\PYGZus{}DIR} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}FP66\PYGZhy{}quant\PYGZdq{}} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZdq{}}
+\PYG{n}{DATA\PYGZus{}KORR\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}KorrelationsMessungen\PYGZdq{}}
+\PYG{n}{DATA\PYGZus{}RATEN\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}RatenMessungen\PYGZdq{}}
+\PYG{n}{DATA\PYGZus{}BIT\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}BitMessungen\PYGZdq{}}
+
+\PYG{n}{IMAGE\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{BASE\PYGZus{}DIR} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}Images\PYGZdq{}}
+\PYG{n}{EINZELZ\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{IMAGE\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}Einzelzählraten\PYGZsq{}}
+\PYG{n}{KOINZIDENZ\PYGZus{}PATH} \PYG{o}{=} \PYG{n}{IMAGE\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s1}{\PYGZsq{}Koinzidenz\PYGZsq{}}
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Utility Functions \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{c+c1}{\PYGZsh{}}
+\PYG{n}{ROUND\PYGZus{}TO} \PYG{o}{=} \PYG{l+m+mi}{3}
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{get\PYGZus{}polaristaoinsgrad}\PYG{p}{(}\PYG{n}{df}\PYG{p}{,} \PYG{n}{key}\PYG{p}{):}
+    \PYG{n}{N\PYGZus{}max} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{max}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{])}
+    \PYG{n}{N\PYGZus{}min} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{min}\PYG{p}{(}\PYG{n}{df}\PYG{p}{[}\PYG{n}{key}\PYG{p}{])}
+    \PYG{k}{return} \PYG{p}{(}\PYG{n}{N\PYGZus{}max} \PYG{o}{\PYGZhy{}} \PYG{n}{N\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{p}{(}\PYG{n}{N\PYGZus{}max} \PYG{o}{+} \PYG{n}{N\PYGZus{}min}\PYG{p}{)}
+
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{get\PYGZus{}correlation}\PYG{p}{(}\PYG{n}{df}\PYG{p}{:} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{DataFrame}\PYG{p}{):}
+    \PYG{n}{deg\PYGZus{}alice} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n}{df}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}AngleAlice(deg)\PYGZdq{}}\PYG{p}{]])}
+    \PYG{n}{deg\PYGZus{}Bob} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n}{df}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}AngleBob(deg)\PYGZdq{}}\PYG{p}{]])}
+    \PYG{n}{n\PYGZus{}A0B0} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n}{df}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}A0B0\PYGZdq{}}\PYG{p}{]])}
+    \PYG{n}{n\PYGZus{}A1B0} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n}{df}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}A1B0\PYGZdq{}}\PYG{p}{]])}
+    \PYG{n}{n\PYGZus{}A0B1} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n}{df}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}A0B1\PYGZdq{}}\PYG{p}{]])}
+    \PYG{n}{n\PYGZus{}A1B1} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{array}\PYG{p}{([}\PYG{n}{df}\PYG{p}{[}\PYG{l+s+s2}{\PYGZdq{}A1B1\PYGZdq{}}\PYG{p}{]])}
+
+
+    \PYG{n}{corr} \PYG{o}{=} \PYG{p}{(}\PYG{n}{n\PYGZus{}A0B0} \PYG{o}{+} \PYG{n}{n\PYGZus{}A1B1} \PYG{o}{\PYGZhy{}} \PYG{n}{n\PYGZus{}A1B0} \PYG{o}{\PYGZhy{}} \PYG{n}{n\PYGZus{}A0B1}\PYG{p}{)} \PYG{o}{/} \PYG{p}{(}\PYG{n}{n\PYGZus{}A0B0} \PYG{o}{+} \PYG{n}{n\PYGZus{}A1B1} \PYG{o}{+} \PYG{n}{n\PYGZus{}A1B0} \PYG{o}{+} \PYG{n}{n\PYGZus{}A0B1}\PYG{p}{)}
+    \PYG{n}{s\PYGZus{}par} \PYG{o}{=} \PYG{n}{corr}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{]} \PYG{o}{\PYGZhy{}} \PYG{n}{corr}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{]} \PYG{o}{+} \PYG{n}{corr}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{2}\PYG{p}{]} \PYG{o}{+} \PYG{n}{corr}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{3}\PYG{p}{]}
+
+    \PYG{n}{A} \PYG{o}{=} \PYG{n}{n\PYGZus{}A0B0} \PYG{o}{+} \PYG{n}{n\PYGZus{}A1B1}
+    \PYG{n}{B} \PYG{o}{=} \PYG{n}{n\PYGZus{}A1B0} \PYG{o}{+} \PYG{n}{n\PYGZus{}A0B1}
+    \PYG{n}{N} \PYG{o}{=} \PYG{n}{n\PYGZus{}A0B0} \PYG{o}{+} \PYG{n}{n\PYGZus{}A1B1} \PYG{o}{+} \PYG{n}{n\PYGZus{}A1B0} \PYG{o}{+} \PYG{n}{n\PYGZus{}A0B1}
+    \PYG{n}{sigma\PYGZus{}E} \PYG{o}{=} \PYG{l+m+mi}{2} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{sqrt}\PYG{p}{(}\PYG{n}{A} \PYG{o}{*} \PYG{n}{B} \PYG{o}{/} \PYG{n}{N}\PYG{o}{**}\PYG{l+m+mi}{3}\PYG{p}{)}
+
+    \PYG{n}{sigma\PYGZus{}s} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{sqrt}\PYG{p}{(}\PYG{n+nb}{sum}\PYG{p}{(}\PYG{n}{sigma\PYGZus{}E}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{n}{i}\PYG{p}{]}\PYG{o}{**}\PYG{l+m+mi}{2} \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{)))}
+    \PYG{k}{return} \PYG{p}{((}\PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{(}\PYG{n}{corr}\PYG{p}{,} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{),} \PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{(}\PYG{n}{sigma\PYGZus{}E}\PYG{p}{,} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{)),}
+        \PYG{p}{(}\PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{(}\PYG{n}{s\PYGZus{}par}\PYG{p}{,} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{),} \PYG{n}{np}\PYG{o}{.}\PYG{n}{round}\PYG{p}{(}\PYG{n}{sigma\PYGZus{}s}\PYG{p}{,} \PYG{n}{ROUND\PYGZus{}TO}\PYG{p}{)))}
+
+
+\PYG{c+c1}{\PYGZsh{}\PYGZsh{}\PYGZsh{} \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} Curve fitting Functions \PYGZhy{}\PYGZhy{}\PYGZhy{}\PYGZhy{} \PYGZsh{}\PYGZsh{}\PYGZsh{}}
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{func\PYGZus{}sin\PYGZus{}fitt}\PYG{p}{(}\PYG{n}{x}\PYG{p}{,} \PYG{n}{a}\PYG{p}{,} \PYG{n}{b}\PYG{p}{,} \PYG{n}{c}\PYG{p}{,} \PYG{n}{d}\PYG{p}{):}
+    \PYG{k}{return} \PYG{n}{a} \PYG{o}{*} \PYG{n}{np}\PYG{o}{.}\PYG{n}{sin}\PYG{p}{(}\PYG{n}{b} \PYG{o}{*} \PYG{p}{(}\PYG{n}{x} \PYG{o}{+} \PYG{n}{c}\PYG{p}{))} \PYG{o}{+} \PYG{n}{d}
+
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{estimate\PYGZus{}sin\PYGZus{}p0}\PYG{p}{(}\PYG{n}{x}\PYG{p}{,} \PYG{n}{y}\PYG{p}{,} \PYG{n}{n\PYGZus{}points}\PYG{o}{=}\PYG{k+kc}{None}\PYG{p}{):}
+\PYG{+w}{    }\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Estimate [a, b, c, d] starting values for a*sin(b*(x+c))+d}
+\PYG{l+s+sd}{    from the max/min within the first n\PYGZus{}points of (x, y).\PYGZdq{}\PYGZdq{}\PYGZdq{}}
+    \PYG{n}{x} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{asarray}\PYG{p}{(}\PYG{n}{x}\PYG{p}{)}
+    \PYG{n}{y} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{asarray}\PYG{p}{(}\PYG{n}{y}\PYG{p}{)}
+    \PYG{k}{if} \PYG{n}{n\PYGZus{}points} \PYG{o+ow}{is} \PYG{o+ow}{not} \PYG{k+kc}{None}\PYG{p}{:}
+        \PYG{n}{x}\PYG{p}{,} \PYG{n}{y} \PYG{o}{=} \PYG{n}{x}\PYG{p}{[:}\PYG{n}{n\PYGZus{}points}\PYG{p}{],} \PYG{n}{y}\PYG{p}{[:}\PYG{n}{n\PYGZus{}points}\PYG{p}{]}
+
+    \PYG{n}{idx\PYGZus{}max} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{argmax}\PYG{p}{(}\PYG{n}{y}\PYG{p}{)}
+    \PYG{n}{idx\PYGZus{}min} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{argmin}\PYG{p}{(}\PYG{n}{y}\PYG{p}{)}
+    \PYG{n}{x\PYGZus{}max}\PYG{p}{,} \PYG{n}{x\PYGZus{}min} \PYG{o}{=} \PYG{n}{x}\PYG{p}{[}\PYG{n}{idx\PYGZus{}max}\PYG{p}{],} \PYG{n}{x}\PYG{p}{[}\PYG{n}{idx\PYGZus{}min}\PYG{p}{]}
+    \PYG{n}{y\PYGZus{}max}\PYG{p}{,} \PYG{n}{y\PYGZus{}min} \PYG{o}{=} \PYG{n}{y}\PYG{p}{[}\PYG{n}{idx\PYGZus{}max}\PYG{p}{],} \PYG{n}{y}\PYG{p}{[}\PYG{n}{idx\PYGZus{}min}\PYG{p}{]}
+
+    \PYG{n+nb}{print}\PYG{p}{(}\PYG{n}{x\PYGZus{}max}\PYG{p}{,} \PYG{n}{x\PYGZus{}min}\PYG{p}{,} \PYG{n}{y\PYGZus{}max}\PYG{p}{,} \PYG{n}{y\PYGZus{}min}\PYG{p}{)}
+
+    \PYG{n}{a0} \PYG{o}{=} \PYG{p}{(}\PYG{n}{y\PYGZus{}max} \PYG{o}{\PYGZhy{}} \PYG{n}{y\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{l+m+mi}{2}
+    \PYG{n}{b0} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{pi} \PYG{o}{/} \PYG{n}{np}\PYG{o}{.}\PYG{n}{abs}\PYG{p}{((}\PYG{n}{x\PYGZus{}max} \PYG{o}{\PYGZhy{}} \PYG{n}{x\PYGZus{}min}\PYG{p}{))}
+    \PYG{n}{c0} \PYG{o}{=} \PYG{o}{\PYGZhy{}}\PYG{p}{(}\PYG{n}{x\PYGZus{}max} \PYG{o}{+} \PYG{n}{x\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{l+m+mi}{2}   \PYG{c+c1}{\PYGZsh{} note the sign fix}
+    \PYG{n}{d0} \PYG{o}{=} \PYG{p}{(}\PYG{n}{y\PYGZus{}max} \PYG{o}{+} \PYG{n}{y\PYGZus{}min}\PYG{p}{)} \PYG{o}{/} \PYG{l+m+mi}{2}
+
+    \PYG{k}{return} \PYG{p}{[}\PYG{n}{a0}\PYG{p}{,} \PYG{n}{b0}\PYG{p}{,} \PYG{n}{c0}\PYG{p}{,} \PYG{n}{d0}\PYG{p}{]}
+
+
+\PYG{n}{err\PYGZus{}DEGREE} \PYG{o}{=} \PYG{l+m+mf}{0.5}
+
+\PYG{n}{columns} \PYG{o}{=} \PYG{p}{[}
+    \PYG{l+s+s1}{\PYGZsq{}AngleAlice(deg)\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}AngleBob(deg)\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A0B0\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A1B0\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A0B1\PYGZsq{}}\PYG{p}{,}
+    \PYG{l+s+s1}{\PYGZsq{}A1B1\PYGZsq{}}\PYG{p}{,}
+\PYG{p}{]}
+
+\PYG{n}{data\PYGZus{}bob} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}KORR\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}17\PYGZhy{}03\PYGZhy{}32\PYGZus{}Verschraenkung\PYGZus{}Bob.txt\PYGZdq{}}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} data\PYGZus{}bob.sort\PYGZus{}values(\PYGZsq{}AngleBob(deg)\PYGZsq{}, inplace=True, ignore\PYGZus{}index=True)}
+\PYG{n}{data\PYGZus{}alice} \PYG{o}{=} \PYG{n}{pd}\PYG{o}{.}\PYG{n}{read\PYGZus{}csv}\PYG{p}{(}
+    \PYG{n}{filepath\PYGZus{}or\PYGZus{}buffer} \PYG{o}{=} \PYG{n}{DATA\PYGZus{}KORR\PYGZus{}PATH} \PYG{o}{/} \PYG{l+s+s2}{\PYGZdq{}2026\PYGZhy{}07\PYGZhy{}20\PYGZus{}17\PYGZhy{}03\PYGZhy{}38\PYGZus{}Verschraenkung\PYGZus{}Alice.txt\PYGZdq{}}\PYG{p}{,}
+    \PYG{n}{sep}     \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{};\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{comment} \PYG{o}{=} \PYG{l+s+s1}{\PYGZsq{}\PYGZsh{}\PYGZsq{}}\PYG{p}{,}
+    \PYG{n}{header}  \PYG{o}{=} \PYG{k+kc}{None}\PYG{p}{,}
+    \PYG{n}{names}   \PYG{o}{=} \PYG{n}{columns}
+\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} data\PYGZus{}alice.sort\PYGZus{}values(\PYGZsq{}AngleAlice(deg)\PYGZsq{}, inplace=True, ignore\PYGZus{}index=True)}
+\PYG{c+c1}{\PYGZsh{} print(data)}
+
+\PYG{n}{s\PYGZus{}corr\PYGZus{}vals} \PYG{o}{=} \PYG{p}{(}\PYG{n}{get\PYGZus{}correlation}\PYG{p}{(}\PYG{n}{data\PYGZus{}bob}\PYG{p}{))}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}S Value und Zählraten Bob}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} AB   }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} A\PYGZsq{}B  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} AB\PYGZsq{}  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} A\PYGZsq{}B\PYGZsq{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} S\PYGZhy{}Value }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+\PYG{p}{)}
+\PYG{n}{s\PYGZus{}corr\PYGZus{}vals} \PYG{o}{=} \PYG{p}{(}\PYG{n}{get\PYGZus{}correlation}\PYG{p}{(}\PYG{n}{data\PYGZus{}alice}\PYG{p}{))}
+\PYG{n+nb}{print}\PYG{p}{(}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{}S Value und Zählraten Alice}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} AB   }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} A\PYGZsq{}B  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} AB\PYGZsq{}  }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{2}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} A\PYGZsq{}B\PYGZsq{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{][}\PYG{l+m+mi}{3}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{   }\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+    \PYG{l+s+sa}{f}\PYG{l+s+s2}{\PYGZdq{} S\PYGZhy{}Value }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{ +/\PYGZhy{} }\PYG{l+s+si}{\PYGZob{}}\PYG{n}{s\PYGZus{}corr\PYGZus{}vals}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{][}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{l+s+si}{\PYGZcb{}}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{,}
+\PYG{p}{)}
+\PYG{c+c1}{\PYGZsh{} print(get\PYGZus{}correlation(data\PYGZus{}alice))}
+\end{MintedVerbatim}
